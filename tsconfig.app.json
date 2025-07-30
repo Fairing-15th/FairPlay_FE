@@ -21,7 +21,10 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Tailwind 타입 자동완성 */
+    "types": ["tailwindcss/types/config"]
   },
-  "include": ["src"]
+  "include": ["src", "tailwind.config.ts"]
 }
