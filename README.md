@@ -1,5 +1,5 @@
 # FairPlay Frontend (React + Vite + TypeScript)
-
+.
 > 박람회 예약/관리 플랫폼 프론트엔드
 > Vite + React + TypeScript 환경, 백엔드(Spring Boot)와 연동
 
