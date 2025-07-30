@@ -10,12 +10,12 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/uploads': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
       '/api': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       }
