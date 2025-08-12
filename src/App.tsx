@@ -25,12 +25,19 @@ import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import RoundManagement from "./pages/host_event/RoundManagement";
+import EventVersionManagement from "./pages/host_event/EventVersionManagement";
+import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
+import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
 import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
 import { BoothApplicationList } from "./pages/host_booth/BoothApplicationList";
 import { BoothApplicationDetail } from "./pages/host_booth/BoothApplicationDetail";
+import { BookingAnalysis } from "./pages/host_analytics/BookingAnalysis";
+import { RevenueSummary } from "./pages/host_analytics/RevenueSummary";
+import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
+import QRScanPage from "./pages/QRScanPage";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -48,9 +55,9 @@ function AppContent() {
       await tokenValidator.validateTokensOnStartup();
       setIsTokenValidated(true);
     };
-    
+
     validateTokens();
-    
+
     // 주기적 토큰 검증 시작
     tokenValidator.startPeriodicValidation();
   }, []);
@@ -64,15 +71,22 @@ function AppContent() {
     // 페이지 로드 시 사용자 온라인 상태로 설정
     const setUserOnline = async () => {
       try {
-        console.log('사용자 온라인 상태 설정 시도 시작');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.log('🚫 토큰이 없어서 온라인 상태 설정 건너뜀');
+          return;
+        }
+
+        console.log('🟢 사용자 온라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/connect', {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           console.log('✅ 사용자 온라인 상태로 설정 성공');
         } else {
-          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText, errorText);
         }
       } catch (error) {
         console.error('❌ 온라인 상태 설정 오류:', error);
@@ -82,15 +96,22 @@ function AppContent() {
     // 페이지를 벗어날 때 사용자 오프라인 상태로 설정
     const setUserOffline = async () => {
       try {
-        console.log('사용자 오프라인 상태 설정 시도 시작');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.log('🚫 토큰이 없어서 오프라인 상태 설정 건너뜀');
+          return;
+        }
+
+        console.log('🔴 사용자 오프라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/disconnect', {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           console.log('✅ 사용자 오프라인 상태로 설정 성공');
         } else {
-          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText, errorText);
         }
       } catch (error) {
         console.error('❌ 오프라인 상태 설정 오류:', error);
@@ -153,11 +174,18 @@ function AppContent() {
         <Route path="/host/ticket-management" element={<TicketManagement />} />
         <Route path="/host/round-management" element={<RoundManagement />} />
         <Route path="/host/status-management" element={<EventStatusBanner />} />
+        <Route path="/host/event-version" element={<EventVersionManagement />} />
+        <Route path="/host/event-version/:versionId" element={<EventVersionDetail />} />
+        <Route path="/host/event-version/comparison" element={<EventVersionComparison />} />
         <Route path="/host/reservation-list" element={<ReservationList />} />
         <Route path="/host/reservation-stats" element={<ReservationStats />} />
         <Route path="/host/booth-type" element={<BoothTypeManagement />} />
         <Route path="/host/booth-applications" element={<BoothApplicationList />} />
         <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
+        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
+        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
+        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
+        <Route path="/host/qr-scan" element={<QRScanPage />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
@@ -180,6 +208,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppContent />
+      {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
       <ChatFloatingModal />
     </BrowserRouter>
   );

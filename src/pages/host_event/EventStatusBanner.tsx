@@ -1,18 +1,14 @@
 import React, { useState } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
+import "./EventStatusBanner.css";
 
 export const EventStatusBanner = () => {
     const [isPublic, setIsPublic] = useState(true);
 
-    const handleSave = () => {
-        // 저장 로직 구현
-        console.log("저장:", { isPublic });
-    };
-
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1407px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
             <TopNav />
 
                 {/* 페이지 제목 */}
@@ -24,7 +20,7 @@ export const EventStatusBanner = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
 
                     {/* 행사 상태 설정 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -42,16 +38,15 @@ export const EventStatusBanner = () => {
                                     <span className={`text-sm font-medium ${!isPublic ? 'text-gray-900' : 'text-gray-400'}`}>
                                         비공개
                                     </span>
-                                    <button
-                                        onClick={() => setIsPublic(!isPublic)}
-                                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isPublic ? 'bg-blue-600' : 'bg-gray-300'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`absolute top-1/2 left-1 h-6 w-6 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out transform -translate-y-1/2 ${isPublic ? 'translate-x-6' : 'translate-x-0'
-                                                }`}
+                                    <label className="relative">
+                                        <input
+                                            type="checkbox"
+                                            className="checkbox"
+                                            checked={isPublic}
+                                            onChange={() => setIsPublic(!isPublic)}
                                         />
-                                    </button>
+                                        <div className="slider"></div>
+                                    </label>
                                     <span className={`text-sm font-medium ${isPublic ? 'text-gray-900' : 'text-gray-400'}`}>
                                         공개
                                     </span>
@@ -67,21 +62,7 @@ export const EventStatusBanner = () => {
                         </div>
                     </div>
 
-                    {/* 액션 버튼 */}
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                            type="button"
-                            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-[10px] text-sm font-medium hover:bg-gray-50 transition-colors"
-                        >
-                            취소
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            className="px-6 py-2 bg-black text-white rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none"
-                        >
-                            저장
-                        </button>
-                    </div>
+
                 </div>
             </div>
         </div>
