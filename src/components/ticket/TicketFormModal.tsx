@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ticketService, Ticket, TicketCreateRequest, TicketType, SeatGrade, TicketStatus, TicketService } from "../../services/ticketService";
+import { ticketService, type Ticket, type TicketCreateRequest, type AudienceType, type SeatType, type TicketStatusCode, TicketService } from "../../services/ticketService";
 import { toast } from 'react-toastify';
 
 interface TicketFormModalProps {
@@ -21,16 +21,17 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
     isEditMode = false,
     eventId 
 }) => {
+
     const [formData, setFormData] = useState({
         name: "",
-        seatGrade: "" as SeatGrade | "",
-        ticketType: "" as TicketType | "",
+        seatType: "" as SeatType | "",
+        audienceType: "" as AudienceType | "",
         price: "",
-        status: "" as TicketStatus | "",
+        ticketStatusCode: "" as TicketStatusCode | "",
         maxPurchase: ""
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -39,25 +40,28 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
         }));
     };
 
-    // 수정 모드일 때 기존 데이터로 폼 초기화
+// 수정 모드일 때 기존 데이터로 폼 초기화
     useEffect(() => {
         if (isEditMode && editTicket) {
+            // 실제 API 응답 구조에 맞게 데이터 추출
+            const editTicketAny = editTicket as Record<string, any>;
+            
             setFormData({
-                name: editTicket.name,
-                seatGrade: editTicket.seatGrade,
-                ticketType: editTicket.ticketType,
-                price: editTicket.price.toString(),
-                status: editTicket.status,
-                maxPurchase: editTicket.maxPurchase.toString()
+                name: editTicket.name || "",
+                seatType: editTicketAny.seatTypeCode || "",
+                audienceType: editTicketAny.audienceTypeCode || "",
+                price: editTicket.price?.toString() || "",
+                ticketStatusCode: editTicketAny.ticketStatusCode || "",
+                maxPurchase: editTicket.maxPurchase?.toString() || ""
             });
         } else {
             // 추가 모드일 때 폼 초기화
             setFormData({
                 name: "",
-                seatGrade: "" as SeatGrade | "",
-                ticketType: "" as TicketType | "",
+                seatType: "" as SeatType | "",
+                audienceType: "" as AudienceType | "",
                 price: "",
-                status: "" as TicketStatus | "",
+                ticketStatusCode: "" as TicketStatusCode | "",
                 maxPurchase: ""
             });
         }
@@ -70,27 +74,25 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
         try {
             const ticketData: TicketCreateRequest = {
                 name: formData.name,
-                seatGrade: formData.seatGrade as SeatGrade,
-                ticketType: formData.ticketType as TicketType,
+                seatType: formData.seatType as SeatType,
+                audienceType: formData.audienceType as AudienceType,
                 price: Number(formData.price),
-                status: formData.status as TicketStatus,
+                ticketStatusCode: formData.ticketStatusCode as TicketStatusCode,
                 maxPurchase: Number(formData.maxPurchase)
             };
 
-            if (isEditMode && editTicket?.id && onUpdateTicket) {
-                const updatedTicket = await ticketService.updateTicket(editTicket.id, ticketData);
+            if (isEditMode && (editTicket as Record<string, any>)?.ticketId && onUpdateTicket) {
+                const updatedTicket = await ticketService.updateTicket(eventId, (editTicket as Record<string, any>).ticketId, ticketData);
                 onUpdateTicket(updatedTicket);
                 toast.success("티켓이 수정되었습니다.");
             } else {
-                console.log('modal :' + eventId);
                 const newTicket = await ticketService.createTicket(eventId, ticketData);
                 onAddTicket(newTicket);
                 toast.success("티켓이 추가되었습니다.");
             }
 
             onClose();
-        } catch (error) {
-            console.error('티켓 저장 중 오류:', error);
+        } catch {
             toast.error(isEditMode ? '티켓 수정에 실패했습니다.' : '티켓 추가에 실패했습니다.');
         } finally {
             setIsSubmitting(false);
@@ -134,15 +136,15 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                         </label>
                         <div className="relative">
                             <select
-                                name="seatGrade"
-                                value={formData.seatGrade}
+                                name="seatType"
+                                value={formData.seatType}
                                 onChange={handleInputChange}
                                 className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 required
                                 disabled={isSubmitting}
                             >
                                 <option value="">좌석 등급을 선택하세요</option>
-                                {TicketService.SEAT_GRADES.map(grade => (
+                                {TicketService.SEAT_TYPES.map(grade => (
                                     <option key={grade.value} value={grade.value}>{grade.label}</option>
                                 ))}
                             </select>
@@ -161,15 +163,15 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                         </label>
                         <div className="relative">
                             <select
-                                name="ticketType"
-                                value={formData.ticketType}
+                                name="audienceType"
+                                value={formData.audienceType}
                                 onChange={handleInputChange}
                                 className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 required
                                 disabled={isSubmitting}
                             >
                                 <option value="">티켓 유형을 선택하세요</option>
-                                {TicketService.TICKET_TYPES.map(type => (
+                                {TicketService.AUDIENCE_TYPES.map(type => (
                                     <option key={type.value} value={type.value}>{type.label}</option>
                                 ))}
                             </select>
@@ -206,8 +208,8 @@ export const TicketFormModal: React.FC<TicketFormModalProps> = ({
                         </label>
                         <div className="relative">
                             <select
-                                name="status"
-                                value={formData.status}
+                                name="ticketStatusCode"
+                                value={formData.ticketStatusCode}
                                 onChange={handleInputChange}
                                 className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 required

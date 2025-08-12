@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
-import { ticketService, Ticket } from "../../services/ticketService";
+import { ticketService, type Ticket, TicketService } from "../../services/ticketService";
 import { TicketFormModal } from "../../components/ticket/TicketFormModal";
 import { toast } from 'react-toastify';
 import authManager from "../../utils/auth";
@@ -17,32 +17,27 @@ export const TicketManagement = () => {
         const fetchUserEventId = async () => {
             try {
                 setIsEventLoading(true);
-                //setEventError(null);
                 const response = await authManager.authenticatedFetch('/api/events/manager/event');
-                console.log(response);
+
                 if (!response.ok) {
-                    console.log('error');
                     throw new Error('행사 관리 권한이 없습니다.');
                 }
                 
                 const data = await response.json();
-                console.log(data);
                 setEventId(data);
             } catch (error) {
-                console.error('사용자 담당 이벤트 조회 실패:', error);
                 setEventError('행사 관리 권한이 없거나 담당 행사를 찾을 수 없습니다.');
             } finally {
-                console.log('finally');
                 setIsEventLoading(false);
-                console.log('finally1');
             }
         };
         
         fetchUserEventId();
     }, []);
 
-    const [selectedTicketType, setSelectedTicketType] = useState("전체");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedSeatType, setSelectedSeatType] = useState("ALL");
+    const [selectedAudienceType, setSelectedAudienceType] = useState("ALL");
+    const [searchTicketName, setSearchTicketName] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editTicket, setEditTicket] = useState<Ticket | null>(null);
@@ -55,10 +50,9 @@ export const TicketManagement = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const tickets = await ticketService.getTickets(eventId, selectedTicketType !== "전체" ? selectedTicketType : undefined, searchTerm);
+            const tickets = await ticketService.getTickets(eventId, selectedSeatType !== "ALL" ? selectedSeatType : undefined, searchTicketName, selectedAudienceType !== "ALL" ? selectedAudienceType : undefined);
             setTicketData(tickets);
         } catch (error) {
-            console.error('티켓 목록 로드 실패:', error);
             setError('티켓 목록을 불러오는데 실패했습니다.');
             setTicketData([]);
         } finally {
@@ -78,7 +72,7 @@ export const TicketManagement = () => {
         if (eventId) {
             loadTickets();
         }
-    }, [selectedTicketType, eventId]);
+    }, [selectedSeatType, selectedAudienceType]);
 
     // 티켓 추가 핸들러
     const handleAddTicket = (newTicket: Ticket) => {
@@ -88,22 +82,21 @@ export const TicketManagement = () => {
     // 티켓 수정 핸들러
     const handleUpdateTicket = (updatedTicket: Ticket) => {
         setTicketData(prev => prev.map(ticket => 
-            ticket.id === updatedTicket.id ? updatedTicket : ticket
+            ticket.ticketId === updatedTicket.ticketId ? updatedTicket : ticket
         ));
     };
 
     // 티켓 삭제 핸들러
-    const handleDeleteTicket = async (ticketId: number, name: string) => {
+    const handleDeleteTicket = async (ticketId: number, name: string, eventId: number) => {
         if (!window.confirm(`"${name}" 티켓을 삭제하시겠습니까?`)) {
             return;
         }
 
         try {
-            await ticketService.deleteTicket(ticketId);
-            setTicketData(prev => prev.filter(ticket => ticket.id !== ticketId));
+            await ticketService.deleteTicket(eventId, ticketId);
+            setTicketData(prev => prev.filter(ticket => ticket.ticketId !== ticketId));
             toast.success('티켓이 삭제되었습니다.');
         } catch (error) {
-            console.error('티켓 삭제 실패:', error);
             toast.error('티켓 삭제에 실패했습니다.');
         }
     };
@@ -172,15 +165,15 @@ export const TicketManagement = () => {
                                     <label className="text-sm font-bold text-gray-700 mb-2">티켓 유형</label>
                                     <div className="relative">
                                         <select
-                                            value={selectedTicketType}
-                                            onChange={(e) => setSelectedTicketType(e.target.value)}
+                                            value={selectedAudienceType}
+                                            onChange={(e) => setSelectedAudienceType(e.target.value)}
                                             className="w-48 h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                             disabled={isLoading}
                                         >
-                                            <option value="전체">전체</option>
-                                            <option value="성인">성인</option>
-                                            <option value="청소년">청소년</option>
-                                            <option value="어린이">어린이</option>
+                                            <option value="ALL">전체</option>
+                                            {TicketService.AUDIENCE_TYPES.map(type => (
+                                                <option key={type.value} value={type.value}>{type.label}</option>
+                                            ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                                             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,17 +188,15 @@ export const TicketManagement = () => {
                                     <label className="text-sm font-bold text-gray-700 mb-2">좌석 등급</label>
                                     <div className="relative">
                                         <select
-                                            value={selectedTicketType}
-                                            onChange={(e) => setSelectedTicketType(e.target.value)}
+                                            value={selectedSeatType}
+                                            onChange={(e) => setSelectedSeatType(e.target.value)}
                                             className="w-48 h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                             disabled={isLoading}
                                         >
-                                            <option value="VIP">VIP석</option>
-                                            <option value="R">R석</option>
-                                            <option value="S">S석</option>
-                                            <option value="A">A석</option>
-                                            <option value="B">B석</option>
-                                            <option value="FREE">자유석</option>
+                                            <option value="ALL">전체</option>
+                                            {TicketService.SEAT_TYPES.map(seatType => (
+                                                <option key={seatType.value} value={seatType.value}>{seatType.label}</option>
+                                            ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                                             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,8 +212,8 @@ export const TicketManagement = () => {
                                     <input
                                         type="text"
                                         placeholder="티켓명을 입력하세요 (Enter키로 검색)"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        value={searchTicketName}
+                                        onChange={(e) => setSearchTicketName(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && eventId) {
                                                 loadTickets();
@@ -288,33 +279,34 @@ export const TicketManagement = () => {
                             ) : filteredTickets.length === 0 ? (
                                 <div className="py-12 text-center">
                                     <div className="text-gray-500">
-                                        {searchTerm || selectedTicketType !== "전체" 
+                                        {searchTicketName || selectedSeatType !== "ALL"
                                             ? "검색 조건에 맞는 티켓이 없습니다." 
                                             : "등록된 티켓이 없습니다."}
                                     </div>
                                 </div>
                             ) : (
                                 filteredTickets.map((ticket, index) => {
-                                    const statusDisplay = ticketService.getStatusDisplay(ticket.status);
+                                    const ticketStatus = ticketService.getTicketStatusCode(ticket.ticketStatusCode);
+
                                     return (
                                         <div
-                                            key={ticket.id}
+                                            key={ticket.ticketId}
                                             className={`grid grid-cols-7 gap-2 py-5 px-6 text-sm items-center ${
                                                 index !== filteredTickets.length - 1 ? "border-b border-gray-200" : ""
                                             }`}
                                         >
-                                            <div className="font-medium text-gray-900 text-left truncate">{ticket.name || '이름 없음'}</div>
-                                            <div className="text-gray-600 text-center">{ticket.seatGrade ? ticketService.getSeatGradeDisplayName(ticket.seatGrade) : '정보 없음'}</div>
+                                            <div className="font-medium text-gray-900 text-left truncate">{ticket.name || '티켓명 없음'}</div>
+                                            <div className="text-gray-600 text-center">{ticket.seatTypeName || '없음'}</div>
                                             <div className="text-center">
-                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${ticket.ticketType ? ticketService.getTypeColor(ticket.ticketType) : 'bg-gray-100 text-gray-800'}`}>
-                                                    {ticket.ticketType ? ticketService.getTypeDisplayName(ticket.ticketType) : '정보 없음'}
+                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${ticket.audienceTypeCode ? ticketService.getAudienceTypeColor(ticket.audienceTypeCode) : 'bg-gray-100 text-gray-800'}`}>
+                                                    {ticket.audienceTypeName}
                                                 </span>
                                             </div>
                                             <div className="font-bold text-gray-900 text-center">{ticket.price ? ticket.price.toLocaleString() : '0'}원</div>
                                             <div className="text-center text-gray-600">{ticket.maxPurchase || 0}매</div>
                                             <div className="text-center">
-                                                <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${statusDisplay.color} ${statusDisplay.textColor}`}>
-                                                    {statusDisplay.text}
+                                                <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${ticketStatus.color} ${ticketStatus.textColor}`}>
+                                                    {ticket.ticketStatusName}
                                                 </span>
                                             </div>
                                             <div className="text-center flex justify-center gap-1">
@@ -330,9 +322,9 @@ export const TicketManagement = () => {
                                                     수정
                                                 </button>
                                                 <button
-                                                    onClick={() => ticket.id && handleDeleteTicket(ticket.id, ticket.name)}
+                                                    onClick={() => ticket.ticketId && handleDeleteTicket(ticket.ticketId, ticket.name, eventId)}
                                                     className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs"
-                                                    disabled={isLoading || !ticket.id}
+                                                    disabled={isLoading || !ticket.ticketId}
                                                 >
                                                     삭제
                                                 </button>

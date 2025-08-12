@@ -1,35 +1,43 @@
 import authManager from '../utils/auth';
 
 // 티켓 상태 enum
-export type TicketStatus = 'BEFORE_SALE' | 'SELLING' | 'SOLD_OUT' | 'CLOSED';
+export type TicketStatusCode = 'BEFORE_SALE' | 'SELLING' | 'SOLD_OUT' | 'CLOSED';
 
 // 티켓 타입 enum
-export type TicketType = 'ADULT' | 'TEEN' | 'CHILD';
+export type AudienceType = 'ADULT' | 'TEEN' | 'CHILD';
 
 // 좌석 등급 enum
-export type SeatGrade = 'VIP' | 'R' | 'S' | 'A' | 'B' | 'FREE';
+export type SeatType = 'VIP' | 'R' | 'S' | 'A' | 'B' | 'FREE';
 
 // 티켓 타입 정의
 export interface Ticket {
-  id?: number;
+  ticketId?: number;
   name: string;
-  seatGrade: SeatGrade;
-  ticketType: TicketType;
+  description?: string;
+  seatTypeCode: string;
+  seatTypeName: string;
+  audienceTypeCode: string;
+  audienceTypeName: string;
   price: number;
-  status: TicketStatus;
+  ticketStatusCode: string;
+  ticketStatusName: string;
   maxPurchase: number;
-  eventId?: number;
+  stock?: number;
+  visible?: boolean;
+  deleted?: boolean;
+  types?: string;
   createdAt?: string;
-  updatedAt?: string;
+  version?: number;
+  message?: string;
 }
 
 // API 요청/응답 타입
 export interface TicketCreateRequest {
   name: string;
-  seatGrade: SeatGrade;
-  ticketType: TicketType;
+  seatType: SeatType;
+  audienceType: AudienceType;
   price: number;
-  status: TicketStatus;
+  ticketStatusCode: TicketStatusCode;
   maxPurchase: number;
 }
 
@@ -47,14 +55,13 @@ export class TicketService {
   private baseUrl = '/api/events';
 
   // 티켓 목록 조회
-  async getTickets(eventId?: number, ticketType?: string, search?: string): Promise<Ticket[]> {
+  async getTickets(eventId?: number, seatType?: string, searchTicketName?: string, audienceType?: string): Promise<Ticket[]> {
     try {
-      console.log('티켓 목록 조회 API 호출:', { eventId, ticketType, search });
-      console.log(eventId, ticketType, search);
       const params = new URLSearchParams();
       if (eventId) params.append('eventId', eventId.toString());
-      if (ticketType && ticketType !== '전체') params.append('ticketType', ticketType);
-      if (search) params.append('search', search);
+      if (seatType && seatType !== '전체') params.append('seatType', seatType);
+      if (audienceType && audienceType !== '전체') params.append('audienceType', audienceType);
+      if (searchTicketName) params.append('searchTicketName', searchTicketName);
 
       const url = `${this.baseUrl}/${eventId}/tickets${params.toString() ? `?${params.toString()}` : ''}`;
       
@@ -63,15 +70,12 @@ export class TicketService {
       });
 
       if (!response.ok) {
-        console.error('티켓 목록 조회 실패:', response.status, response.statusText);
         throw new Error(`티켓 목록 조회 실패: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('티켓 목록 조회 성공:', data);
       return data.tickets || data;
     } catch (error) {
-      console.error('티켓 목록 조회 중 오류:', error);
       throw error;
     }
   }
@@ -79,8 +83,6 @@ export class TicketService {
   // 티켓 생성
   async createTicket(eventId: number, ticketData: TicketCreateRequest): Promise<Ticket> {
     try {
-      console.log('티켓 생성 API 호출:', { eventId, ticketData });
-      console.log(eventId, ticketData);
       const response = await authManager.authenticatedFetch(`/api/events/${eventId}/tickets`, {
         method: 'POST',
         headers: {
@@ -90,26 +92,20 @@ export class TicketService {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('티켓 생성 실패:', response.status, response.statusText, errorData);
+        await response.text();
         throw new Error(`티켓 생성 실패: ${response.statusText}`);
       }
 
-      const createdTicket = await response.json();
-      console.log('티켓 생성 성공:', createdTicket);
-      return createdTicket;
+      return await response.json();
     } catch (error) {
-      console.error('티켓 생성 중 오류:', error);
       throw error;
     }
   }
 
   // 티켓 수정
-  async updateTicket(ticketId: number, ticketData: TicketCreateRequest): Promise<Ticket> {
+  async updateTicket(eventId: number, ticketId: number, ticketData: TicketCreateRequest): Promise<Ticket> {
     try {
-      console.log('티켓 수정 API 호출:', { ticketId, ticketData });
-
-      const response = await authManager.authenticatedFetch(`${this.baseUrl}/${ticketId}`, {
+      const response = await authManager.authenticatedFetch(`${this.baseUrl}/${eventId}/tickets/${ticketId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -118,45 +114,35 @@ export class TicketService {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('티켓 수정 실패:', response.status, response.statusText, errorData);
         throw new Error(`티켓 수정 실패: ${response.statusText}`);
       }
 
       const updatedTicket = await response.json();
-      console.log('티켓 수정 성공:', updatedTicket);
       return updatedTicket;
     } catch (error) {
-      console.error('티켓 수정 중 오류:', error);
       throw error;
     }
   }
 
   // 티켓 삭제
-  async deleteTicket(ticketId: number): Promise<boolean> {
+  async deleteTicket(eventId: number, ticketId: number): Promise<boolean> {
     try {
-      console.log('티켓 삭제 API 호출:', { ticketId });
-
-      const response = await authManager.authenticatedFetch(`${this.baseUrl}/${ticketId}`, {
+      const response = await authManager.authenticatedFetch(`${this.baseUrl}/${eventId}/tickets/${ticketId}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('티켓 삭제 실패:', response.status, response.statusText, errorData);
         throw new Error(`티켓 삭제 실패: ${response.statusText}`);
       }
 
-      console.log('티켓 삭제 성공');
       return true;
     } catch (error) {
-      console.error('티켓 삭제 중 오류:', error);
       throw error;
     }
   }
 
   // 상태 변환 유틸리티
-  getStatusDisplay(status: TicketStatus): { text: string; color: string; textColor: string } {
+  getTicketStatusCode(status: string): { text: string; color: string; textColor: string } {
     switch (status) {
       case 'BEFORE_SALE':
         return { text: '판매전', color: 'bg-gray-100', textColor: 'text-gray-800' };
@@ -172,7 +158,7 @@ export class TicketService {
   }
 
   // 티켓 유형별 색상
-  getTypeColor(type: TicketType): string {
+  getAudienceTypeColor(type: string): string {
     switch (type) {
       case "ADULT":
         return "bg-red-100 text-red-800";
@@ -186,7 +172,7 @@ export class TicketService {
   }
 
   // 티켓 유형 한글 변환
-  getTypeDisplayName(type: TicketType): string {
+  getAudienceTypeName(type: string): string {
     switch (type) {
       case 'ADULT':
         return '성인';
@@ -200,7 +186,7 @@ export class TicketService {
   }
 
   // 좌석 등급 한글 변환
-  getSeatGradeDisplayName(seatGrade: SeatGrade): string {
+  getSeatTypeName(seatGrade: string): string {
     switch (seatGrade) {
       case 'VIP':
         return 'VIP석';
@@ -220,13 +206,13 @@ export class TicketService {
   }
 
   // 상수 정의
-  static readonly TICKET_TYPES = [
+  static readonly AUDIENCE_TYPES = [
     { value: 'ADULT', label: '성인' },
     { value: 'TEEN', label: '청소년' },
     { value: 'CHILD', label: '어린이' },
   ];
 
-  static readonly SEAT_GRADES = [
+  static readonly SEAT_TYPES = [
     { value: 'VIP', label: 'VIP석' },
     { value: 'R', label: 'R석' },
     { value: 'S', label: 'S석' },
