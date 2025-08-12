@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
 import api from "../api/axios";
 import {
-    FaChevronLeft,
-    FaChevronRight,
     FaHeart
 } from "react-icons/fa";
 import { TopNav } from "../components/TopNav";
@@ -17,6 +15,8 @@ import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
 } from "../services/types/eventType";
+import HotPicksCylinder from "../components/hotpicks/HotPicksCylinder";
+
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -49,54 +49,53 @@ export const Main: React.FC = () => {
 
 
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
-    const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
     const navigate = useNavigate();
 
     const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
     const authHeaders = () => {
-  const t = localStorage.getItem("accessToken");
-  return t ? { Authorization: `Bearer ${t}` } : {};
-};
+        const t = localStorage.getItem("accessToken");
+        return t ? { Authorization: `Bearer ${t}` } : {};
+    };
 
-const toggleWish = async (eventId: number) => {
-  // 인증 확인
-  if (!requireAuth(navigate, '관심 등록')) {
-    return;
-  }
+    const toggleWish = async (eventId: number) => {
+        // 인증 확인
+        if (!requireAuth(navigate, '관심 등록')) {
+            return;
+        }
 
-  const wasLiked = likedEvents.has(eventId);
+        const wasLiked = likedEvents.has(eventId);
 
-  // 낙관적 업데이트
-  setLikedEvents(prev => {
-    const next = new Set(prev);
-    wasLiked ? next.delete(eventId) : next.add(eventId);
-    return next;
-  });
+        // 낙관적 업데이트
+        setLikedEvents(prev => {
+            const next = new Set(prev);
+            wasLiked ? next.delete(eventId) : next.add(eventId);
+            return next;
+        });
 
-  try {
-    if (wasLiked) {
-      // 찜 취소
-      await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-    } else {
-      // 찜 등록 (@RequestParam Long eventId)
-      await api.post(`/api/wishlist`, null, {
-        params: { eventId },            // ★ body 말고 params!
-        headers: authHeaders(),
-      });
-    }
-  } catch (e) {
-    console.error("찜 토글 실패:", e);
-    // 실패 시 롤백
-    setLikedEvents(prev => {
-      const next = new Set(prev);
-      wasLiked ? next.add(eventId) : next.delete(eventId);
-      return next;
-    });
-    // 필요하면 안내
-    // alert("로그인이 필요하거나 권한이 부족합니다.");
-  }
-};
+        try {
+            if (wasLiked) {
+                // 찜 취소
+                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+            } else {
+                // 찜 등록 (@RequestParam Long eventId)
+                await api.post(`/api/wishlist`, null, {
+                    params: { eventId },            // ★ body 말고 params!
+                    headers: authHeaders(),
+                });
+            }
+        } catch (e) {
+            console.error("찜 토글 실패:", e);
+            // 실패 시 롤백
+            setLikedEvents(prev => {
+                const next = new Set(prev);
+                wasLiked ? next.add(eventId) : next.delete(eventId);
+                return next;
+            });
+            // 필요하면 안내
+            // alert("로그인이 필요하거나 권한이 부족합니다.");
+        }
+    };
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -245,22 +244,22 @@ const toggleWish = async (eventId: number) => {
     };
 
     useEffect(() => {
-  (async () => {
-    // 로그인한 사용자만 위시리스트 로드
-    if (!isAuthenticated()) {
-      return;
-    }
-    
-    try {
-      const res = await api.get("/api/wishlist", { headers: authHeaders() });
-      const s = new Set<number>();
-      (res.data || []).forEach((w: any) => s.add(w.eventId)); // 응답 구조: {eventId,...}
-      setLikedEvents(s);
-    } catch (e) {
-      console.error("위시리스트 로드 실패:", e);
-    }
-  })();
-}, []);
+        (async () => {
+            // 로그인한 사용자만 위시리스트 로드
+            if (!isAuthenticated()) {
+                return;
+            }
+
+            try {
+                const res = await api.get("/api/wishlist", { headers: authHeaders() });
+                const s = new Set<number>();
+                (res.data || []).forEach((w: any) => s.add(w.eventId)); // 응답 구조: {eventId,...}
+                setLikedEvents(s);
+            } catch (e) {
+                console.error("위시리스트 로드 실패:", e);
+            }
+        })();
+    }, []);
 
 
     // 데이터 로드
@@ -300,15 +299,6 @@ const toggleWish = async (eventId: number) => {
     //     }
     // };
 
-
-    // Hot Picks 슬라이드 함수들
-    const handleHotPicksPrev = () => {
-        setHotPicksSlideIndex(prev => Math.max(0, prev - 1));
-    };
-
-    const handleHotPicksNext = () => {
-        setHotPicksSlideIndex(prev => Math.min(5, prev + 1)); // 최대 5 (10개 이벤트, 5개씩 표시)
-    };
 
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
     const [hotPicks, setHotPicks] = useState<HotPick[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -409,11 +399,27 @@ const toggleWish = async (eventId: number) => {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            <TopNav />
+        <>
+            <style>
+                {`
+                    @keyframes scrollLeft {
+                        0% {
+                            transform: translateX(0);
+                        }
+                        100% {
+                            transform: translateX(-50%);
+                        }
+                    }
+                `}
+            </style>
 
-            {/* 히어로 섹션 */}
-            <div className="relative w-full h-[600px] bg-gray-100">
+            {/* TopNav - 중앙 고정 */}
+            <div className="bg-white">
+                <TopNav />
+            </div>
+
+            {/* 히어로 섹션 - 부모 밖으로 완전히 분리 */}
+            <div className="relative w-[calc(100vw-17px)] h-[calc(100vh-64px)] bg-gray-100" style={{ left: '50%', transform: 'translateX(-50%)' }}>
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -448,7 +454,7 @@ const toggleWish = async (eventId: number) => {
                             onMouseEnter={() => {
                                 const swiper = (window as any).heroSwiper;
                                 if (swiper) {
-                                    swiper.slideTo(index);
+                                    swiper.slideToLoop(index);
                                 }
                             }}
                         >
@@ -462,151 +468,180 @@ const toggleWish = async (eventId: number) => {
                 </div>
             </div>
 
-            {/* Hot Picks 섹션 */}
-            <div className="bg-[#f7fafc] py-16">
-                <div className="max-w-7xl mx-auto px-8">
-                    <div className="flex justify-between items-center mb-8">
+            {/* 나머지 콘텐츠 - 중앙 고정 */}
+            <div className="bg-white">
+                {/* Hot Picks - 블루스퀘어 스타일 */}
+                <div className="relative w-screen py-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+                    <div className="max-w-7xl mx-auto px-8 mb-4">
                         <h2 className="text-3xl font-bold text-black">Hot Picks</h2>
-                        <div className="flex space-x-2">
-                            <button
-                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                onClick={handleHotPicksPrev}
-                                disabled={hotPicksSlideIndex === 0}
-                            >
-                                <FaChevronLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <button
-                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                onClick={handleHotPicksNext}
-                                disabled={hotPicksSlideIndex === 5}
-                            >
-                                <FaChevronRight className="w-5 h-5 text-gray-600" />
-                            </button>
-                        </div>
                     </div>
+                    <HotPicksCylinder
+                        items={[
+                            {
+                                id: 1,
+                                title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
+                                dateText: "2025.05.25",
+                                venue: "KYOCERA DOME OSAKA",
+                                imageUrl: "/images/gd2.png",
+                            },
+                            {
+                                id: 2,
+                                title: "YE LIVE IN KOREA",
+                                dateText: "2025.06.15",
+                                venue: "인천문학경기장",
+                                imageUrl: "/images/YE1.png",
+                            },
+                            {
+                                id: 3,
+                                title: "2025 AI & 로봇 박람회",
+                                dateText: "2025-08-15 ~ 2025-08-17",
+                                venue: "코엑스 A홀",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 4,
+                                title: "현대미술 특별전",
+                                dateText: "2025-09-05 ~ 2025-09-30",
+                                venue: "국립현대미술관",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 5,
+                                title: "서울 국제 도서전",
+                                dateText: "2025-08-22 ~ 2025-08-25",
+                                venue: "코엑스 B홀",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 6,
+                                title: "블랙핑크 월드투어",
+                                dateText: "2025-09-01 ~ 2025-09-03",
+                                venue: "고척스카이돔",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 7,
+                                title: "스타트업 투자 세미나",
+                                dateText: "2025-08-15",
+                                venue: "강남구 컨벤션센터",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 8,
+                                title: "디자인 페어 서울",
+                                dateText: "2025-09-10 ~ 2025-09-15",
+                                venue: "예술의전당",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 9,
+                                title: "서울 국제 영화제",
+                                dateText: "2025-09-05 ~ 2025-09-15",
+                                venue: "여의도 한강공원",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                            {
+                                id: 10,
+                                title: "서울 라이트 페스티벌",
+                                dateText: "2025-09-20 ~ 2025-09-25",
+                                venue: "남산타워",
+                                imageUrl: "/images/NoImage.png",
+                            },
+                        ]}
+                    />
+                </div>
 
-                    <div className="overflow-hidden">
-                        <div
-                            className="flex gap-6 transition-transform duration-500 ease-in-out"
-                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
-                        >
-                            {allHotPicks.map((item, index) => (
-                                <div key={item.id} className="relative flex-shrink-0"
-                                    style={{ width: 'calc(20% - 24px)' }}>
-                                    <img
-                                        className="w-full h-64 object-cover rounded-[10px]"
-                                        alt={`Hot Pick ${index + 1}`}
-                                        src={item.image}
-                                    />
-                                    <div className="mt-4 text-left">
-                                        <span
-                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                            {item.category}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">{item.location}</div>
-                                            <div>{item.date}</div>
+
+                {/* 행사 섹션 */}
+                <div className="py-16">
+                    <div className="max-w-7xl mx-auto px-8">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-bold text-black">Event</h2>
+                        </div>
+
+                        {/* 필터 버튼들 */}
+                        <div className="flex space-x-4 mb-8">
+                            {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleCategoryChange(filter)}
+                                    className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
+                                        ? "bg-black text-white font-bold"
+                                        : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
+                                        }`}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 행사 카드들 */}
+                        <div className="grid grid-cols-5 gap-6">
+                            {events.map((event) => (
+                                <div key={event.id} className="relative">
+                                    <Link to={`/eventdetail/${event.id}`}>
+                                        <div className="relative">
+                                            <img
+                                                className="w-full h-64 object-cover rounded-[10px]"
+                                                alt={event.title}
+                                                src={event.thumbnailUrl}
+                                            />
+                                            <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleWish(event.id);
+                                                }}
+                                            />
+
                                         </div>
-                                    </div>
+                                        <div className="mt-4 text-left">
+
+                                            <span
+                                                className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                                {event.mainCategory}
+                                            </span>
+                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <div className="text-sm text-gray-600 mb-2">
+                                                <div className="font-bold">{event.location}</div>
+                                                <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
+                                            </div>
+                                            <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                        </div>
+                                    </Link>
                                 </div>
                             ))}
                         </div>
+
+                        {/* 전체보기 버튼 */
+                        }
+                        <div className="text-center mt-12">
+                            <Link to="/eventoverview">
+                                <button
+                                    className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                                    전체보기
+                                </button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* 행사 섹션 */}
-            <div className="py-16">
-                <div className="max-w-7xl mx-auto px-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">행사</h2>
+                {/* 푸터 */}
+                <footer className="bg-white border-t border-gray-200 py-16">
+                    <div className="max-w-7xl mx-auto px-8 text-center">
+                        <p className="text-gray-600 mb-8">
+                            간편하고 안전한 행사 관리 솔루션
+                        </p>
+                        <div className="flex justify-center space-x-8">
+                            <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
+                            <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
+                            <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
+                            <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
+                        </div>
                     </div>
-
-                    {/* 필터 버튼들 */}
-                    <div className="flex space-x-4 mb-8">
-                        {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleCategoryChange(filter)}
-                                className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
-                                    ? "bg-black text-white font-bold"
-                                    : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
-                                    }`}
-                            >
-                                {filter}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* 행사 카드들 */}
-                    <div className="grid grid-cols-5 gap-6">
-                        {events.map((event) => (
-                            <div key={event.id} className="relative">
-                                <Link to={`/eventdetail/${event.id}`}>
-                                    <div className="relative">
-                                        <img
-                                            className="w-full h-64 object-cover rounded-[10px]"
-                                            alt={event.title}
-                                            src={event.thumbnailUrl}
-                                        />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                toggleWish(event.id);
-                                            }}
-                                        />
-
-                                    </div>
-                                    <div className="mt-4 text-left">
-
-                                        <span
-                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                            {event.mainCategory}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">{event.location}</div>
-                                            <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
-                                        </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
-                                    </div>
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* 전체보기 버튼 */
-                    }
-                    <div className="text-center mt-12">
-                        <Link to="/eventoverview">
-                            <button
-                                className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
-                                전체보기
-                            </button>
-                        </Link>
-                    </div>
-                </div>
-            </div>
-
-            {/* 푸터 */
-            }
-            <footer className="bg-white border-t border-gray-200 py-16">
-                <div className="max-w-7xl mx-auto px-8 text-center">
-                    <p className="text-gray-600 mb-8">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="flex justify-center space-x-8">
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
-                    </div>
-                </div>
-            </footer>
-        </div>
-    )
-        ;
+                </footer>
+            </div >
+        </>
+    );
 }; 
