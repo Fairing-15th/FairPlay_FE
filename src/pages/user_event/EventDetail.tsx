@@ -21,6 +21,8 @@ const authHeaders = () => {
     return t ? {Authorization: `Bearer ${t}`} : {};
 };
 
+const isAuthed = () => !!localStorage.getItem("accessToken");
+
 const EventDetail = (): JSX.Element => {
     const {eventId} = useParams();
     const navigate = useNavigate();
@@ -56,7 +58,13 @@ const EventDetail = (): JSX.Element => {
 
     // 초기 위시 상태 로드
     useEffect(() => {
-        if (!id) return;
+        //if (!id) return;
+
+        // 비로그인: API 호출하지 말고 꺼두기
+  if (!isAuthed()) {
+    setIsLiked(false);
+    return;
+  }
         (async () => {
             try {
                 const {data} = await api.get<WishlistResponseDto[]>("/api/wishlist", {
@@ -75,6 +83,9 @@ const EventDetail = (): JSX.Element => {
     // 관심 토글
     const toggleLike = async () => {
         if (!id || pending) return;
+
+        if (!requireAuth(navigate, "관심 등록")) return;
+
         setPending(true);
 
         const was = isLiked;
