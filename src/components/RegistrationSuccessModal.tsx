@@ -2,16 +2,18 @@ import React from "react";
 import { CheckCircle } from "lucide-react";
 
 interface Participant {
-    id: number;
+    id: string;
     name: string;
     phone: string;
     email: string;
+    registrationDate: string;
+    isOwner?: boolean;
 }
 
 interface RegistrationSuccessModalProps {
     isOpen: boolean;
     onClose: () => void;
-    participant: Participant | null;
+    participant: Participant;
     eventName: string;
 }
 
@@ -52,15 +54,15 @@ export default function RegistrationSuccessModal({
                                     이름
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant?.name}
+                                    {participant.name}
                                 </span>
-                            </div>                          
+                            </div>
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
                                     휴대폰 번호
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant?.phone}
+                                    {participant.phone}
                                 </span>
                             </div>
                             <div className="flex justify-between">
@@ -68,7 +70,7 @@ export default function RegistrationSuccessModal({
                                     이메일
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant?.email}
+                                    {participant.email}
                                 </span>
                             </div>
                         </div>
@@ -77,7 +79,7 @@ export default function RegistrationSuccessModal({
                     {/* 확인 버튼 */}
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-50 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-xs"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-xs"
                     >
                         확인
                     </button>

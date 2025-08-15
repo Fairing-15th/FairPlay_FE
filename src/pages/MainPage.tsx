@@ -2,20 +2,17 @@ import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
 import api from "../api/axios";
 import {
-    FaHeart,
-    FaMapMarkerAlt
+    FaChevronLeft,
+    FaChevronRight,
+    FaHeart
 } from "react-icons/fa";
-import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
-import { Footer } from "../components/Footer";
-import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade, Navigation, EffectCoverflow } from "swiper/modules";
+import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
-import "swiper/css/navigation";
 import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
@@ -45,7 +42,6 @@ interface HotPick {
 }
 
 export const Main: React.FC = () => {
-    const { isDark } = useTheme();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -53,61 +49,54 @@ export const Main: React.FC = () => {
 
 
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
+    const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
     const navigate = useNavigate();
 
-    // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
     const authHeaders = () => {
-        const t = localStorage.getItem("accessToken");
-        return t ? { Authorization: `Bearer ${t}` } : {};
-    };
+  const t = localStorage.getItem("accessToken");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
-    const toggleWish = async (eventId: number) => {
-        // 인증 확인
-        if (!requireAuth(navigate, '관심 등록')) {
-            return;
-        }
+const toggleWish = async (eventId: number) => {
+  // 인증 확인
+  if (!requireAuth(navigate, '관심 등록')) {
+    return;
+  }
 
-        const wasLiked = likedEvents.has(eventId);
+  const wasLiked = likedEvents.has(eventId);
 
-        // 낙관적 업데이트
-        setLikedEvents(prev => {
-            const next = new Set(prev);
-            if (wasLiked) {
-                next.delete(eventId);
-            } else {
-                next.add(eventId);
-            }
-            return next;
-        });
+  // 낙관적 업데이트
+  setLikedEvents(prev => {
+    const next = new Set(prev);
+    wasLiked ? next.delete(eventId) : next.add(eventId);
+    return next;
+  });
 
-        try {
-            if (wasLiked) {
-                // 찜 취소
-                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-            } else {
-                // 찜 등록 (@RequestParam Long eventId)
-                await api.post(`/api/wishlist`, null, {
-                    params: { eventId },            // ★ body 말고 params!
-                    headers: authHeaders(),
-                });
-            }
-        } catch (e) {
-            console.error("찜 토글 실패:", e);
-            // 실패 시 롤백
-            setLikedEvents(prev => {
-                const next = new Set(prev);
-                if (wasLiked) {
-                    next.add(eventId);
-                } else {
-                    next.delete(eventId);
-                }
-                return next;
-            });
-            // 필요하면 안내
-            // alert("로그인이 필요하거나 권한이 부족합니다.");
-        }
-    };
+  try {
+    if (wasLiked) {
+      // 찜 취소
+      await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+    } else {
+      // 찜 등록 (@RequestParam Long eventId)
+      await api.post(`/api/wishlist`, null, {
+        params: { eventId },            // ★ body 말고 params!
+        headers: authHeaders(),
+      });
+    }
+  } catch (e) {
+    console.error("찜 토글 실패:", e);
+    // 실패 시 롤백
+    setLikedEvents(prev => {
+      const next = new Set(prev);
+      wasLiked ? next.add(eventId) : next.delete(eventId);
+      return next;
+    });
+    // 필요하면 안내
+    // alert("로그인이 필요하거나 권한이 부족합니다.");
+  }
+};
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -158,7 +147,6 @@ export const Main: React.FC = () => {
 
     useEffect(() => {
         fetchEvents();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCategory]);
 
     const handleCategoryChange = (category: string) => {
@@ -213,8 +201,8 @@ export const Main: React.FC = () => {
                 {
                     id: 4,
                     title: "Event 4",
-                    imageUrl: "/images/therose2.png",
-                    thumbnailUrl: "/images/therose1.png",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
                     linkUrl: "/event/4",
                     startDate: "2025-08-10",
                     endDate: "2025-08-10",
@@ -224,8 +212,8 @@ export const Main: React.FC = () => {
                 {
                     id: 5,
                     title: "Event 5",
-                    imageUrl: "/images/eaj2.jpg",
-                    thumbnailUrl: "/images/eaj1.jpg",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
                     linkUrl: "/event/5",
                     startDate: "2025-09-05",
                     endDate: "2025-09-05",
@@ -235,8 +223,8 @@ export const Main: React.FC = () => {
                 {
                     id: 6,
                     title: "Event 6",
-                    imageUrl: "/images/cyber2.png",
-                    thumbnailUrl: "/images/cyber.png",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
                     linkUrl: "/event/6",
                     startDate: "2025-10-15",
                     endDate: "2025-10-15",
@@ -257,23 +245,22 @@ export const Main: React.FC = () => {
     };
 
     useEffect(() => {
-        (async () => {
-            // 로그인한 사용자만 위시리스트 로드
-            if (!isAuthenticated()) {
-                return;
-            }
-
-            try {
-                const res = await api.get("/api/wishlist", { headers: authHeaders() });
-                const s = new Set<number>();
-                type WishlistItem = { eventId: number };
-                (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
-                setLikedEvents(s);
-            } catch (e: unknown) {
-                console.error("위시리스트 로드 실패:", e);
-            }
-        })();
-    }, []);
+  (async () => {
+    // 로그인한 사용자만 위시리스트 로드
+    if (!isAuthenticated()) {
+      return;
+    }
+    
+    try {
+      const res = await api.get("/api/wishlist", { headers: authHeaders() });
+      const s = new Set<number>();
+      (res.data || []).forEach((w: any) => s.add(w.eventId)); // 응답 구조: {eventId,...}
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
 
 
     // 데이터 로드
@@ -314,11 +301,17 @@ export const Main: React.FC = () => {
     // };
 
 
-    // Hot Picks는 Swiper로 전환하여 수동 인덱스 제어 제거
+    // Hot Picks 슬라이드 함수들
+    const handleHotPicksPrev = () => {
+        setHotPicksSlideIndex(prev => Math.max(0, prev - 1));
+    };
+
+    const handleHotPicksNext = () => {
+        setHotPicksSlideIndex(prev => Math.min(5, prev + 1)); // 최대 5 (10개 이벤트, 5개씩 표시)
+    };
 
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-    const [hotPicks] = useState<HotPick[]>([]);
-    const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+    const [hotPicks, setHotPicks] = useState<HotPick[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
 
     // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
     const tempHotPicks: HotPick[] = [
@@ -336,71 +329,71 @@ export const Main: React.FC = () => {
             date: "2025.06.15",
             location: "인천문학경기장",
             category: "공연",
-            image: "/images/YE3.png",
+            image: "/images/YE1.png",
         },
         {
             id: 3,
-            title: "2025 명원 세계 차 박람회",
-            date: "2025-09-11 ~ 2025-09-14",
-            location: "코엑스 B2홀",
+            title: "2025 AI & 로봇 박람회",
+            date: "2025-08-15 ~ 2025-08-17",
+            location: "코엑스 A홀",
             category: "박람회",
-            image: "/images/tea.png",
+            image: "/images/NoImage.png",
         },
         {
             id: 4,
-            title: "사이버 보안 컨퍼런스 2025",
-            date: "2025-09-10 ~ 2025-09-12",
-            location: "코엑스 D홀",
-            category: "강연/세미나",
-            image: "/images/cyber.png",
+            title: "현대미술 특별전",
+            date: "2025-09-05 ~ 2025-09-30",
+            location: "국립현대미술관",
+            category: "전시/행사",
+            image: "/images/NoImage.png",
         },
         {
             id: 5,
-            title: "THE ROSE 2025 LIVE IN SEOUL",
-            date: "2025.09.20",
-            location: "KSPO DOME",
-            category: "공연",
-            image: "/images/therose1.png",
+            title: "서울 국제 도서전",
+            date: "2025-08-22 ~ 2025-08-25",
+            location: "코엑스 B홀",
+            category: "박람회",
+            image: "/images/NoImage.png",
         },
         {
             id: 6,
-            title: "eaJ LIVE IN SEOUL",
-            date: "2025.09.25",
-            location: "YES24 라이브홀",
+            title: "블랙핑크 월드투어",
+            date: "2025-09-01 ~ 2025-09-03",
+            location: "고척스카이돔",
             category: "공연",
-            image: "/images/eaj1.jpg",
+            image: "/images/NoImage.png",
         },
         {
             id: 7,
-            title: "2025 한가위 명절선물전",
-            date: "2025-08-25 ~ 2025-08-28",
-            location: "COEX 컨벤션홀",
-            category: "전시/행사",
-            image: "/images/coex.png",
+            title: "스타트업 투자 세미나",
+            date: "2025-08-15",
+            location: "강남구 컨벤션센터",
+            category: "강연/세미나",
+            image: "/images/NoImage.png",
         },
         {
             id: 8,
-            title: "2025 케이펫페어 서울",
-            date: "2025-08-13 ~ 2025-08-16",
-            location: "킨텍스 제1전시장",
-            category: "박람회",
-            image: "/images/pet.jpg",
+            title: "디자인 페어 서울",
+            date: "2025-09-10 ~ 2025-09-15",
+            location: "예술의전당",
+            category: "전시/행사",
+            image: "/images/NoImage.png",
         },
         {
             id: 9,
-            title: "2025 JOYURI FAN-CON",
-            date: "추후 공개",
-            location: "추후 공개",
-            category: "공연",
-            image: "/images/joyuri.jpg",
+            title: "서울 국제 영화제",
+            date: "2025-09-05 ~ 2025-09-15",
+            location: "여의도 한강공원",
+            category: "축제",
+            image: "/images/NoImage.png",
         },
         {
             id: 10,
-            title: "IU HEREH WORLD TOUR CONCERT",
-            date: "추후 공개",
-            location: "추후 공개",
-            category: "공연",
-            image: "/images/iu.jpg",
+            title: "서울 라이트 페스티벌",
+            date: "2025-09-20 ~ 2025-09-25",
+            location: "남산타워",
+            category: "축제",
+            image: "/images/NoImage.png",
         },
     ];
 
@@ -409,18 +402,18 @@ export const Main: React.FC = () => {
 
     if (loading) {
         return (
-            <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
+            <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-xl">로딩 중...</div>
             </div>
         );
     }
 
     return (
-        <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
+        <div className="min-h-screen bg-white">
             <TopNav />
 
             {/* 히어로 섹션 */}
-            <div className={`relative w-full h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
+            <div className="relative w-full h-[600px] bg-gray-100">
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -429,10 +422,10 @@ export const Main: React.FC = () => {
                     className="w-full h-full"
                     onSwiper={(swiper) => {
                         // Swiper 인스턴스를 저장
-                        (window as unknown as Window).heroSwiper = swiper;
+                        (window as any).heroSwiper = swiper;
                     }}
                 >
-                    {paidAdvertisements.map((ad) => (
+                    {paidAdvertisements.map((ad, index) => (
                         <SwiperSlide key={ad.id}>
                             <img
                                 src={ad.imageUrl}
@@ -453,10 +446,9 @@ export const Main: React.FC = () => {
                             key={ad.id}
                             className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                             onMouseEnter={() => {
-                                const swiper = (window as unknown as Window & { heroSwiper?: any }).heroSwiper;
+                                const swiper = (window as any).heroSwiper;
                                 if (swiper) {
-                                    // loop 모드에서는 slideToLoop를 사용해야 원본 인덱스와 정확히 매칭됩니다.
-                                    swiper.slideToLoop(index);
+                                    swiper.slideTo(index);
                                 }
                             }}
                         >
@@ -470,76 +462,65 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 핫픽스 섹션 (3D 커버플로우) */}
-            <div className="py-16 theme-surface theme-transition">
+            {/* Hot Picks 섹션 */}
+            <div className="bg-[#f7fafc] py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
+                        <h2 className="text-3xl font-bold text-black">Hot Picks</h2>
+                        <div className="flex space-x-2">
+                            <button
+                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={handleHotPicksPrev}
+                                disabled={hotPicksSlideIndex === 0}
+                            >
+                                <FaChevronLeft className="w-5 h-5 text-gray-600" />
+                            </button>
+                            <button
+                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={handleHotPicksNext}
+                                disabled={hotPicksSlideIndex === 5}
+                            >
+                                <FaChevronRight className="w-5 h-5 text-gray-600" />
+                            </button>
+                        </div>
                     </div>
 
-                    <Swiper
-                        modules={[Navigation, Autoplay, EffectCoverflow]}
-                        navigation
-                        effect="coverflow"
-                        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
-                        slidesPerView="auto"
-                        centeredSlides={true}
-                        loop={true}
-                        spaceBetween={0}
-                        watchSlidesProgress={true}
-                        speed={900}
-                        autoplay={{ delay: 3500, disableOnInteraction: false }}
-                        className="w-full hotpick-swiper"
-                        onSwiper={(swiper) => {
-                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
-                        }}
-                        onSlideChange={(swiper) => {
-                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
-                        }}
-                    >
-                        {allHotPicks.map((item, index) => (
-                            <SwiperSlide key={item.id} className="hotpick-slide">
-                                <div className="group relative w-full rounded-[10px] overflow-hidden">
+                    <div className="overflow-hidden">
+                        <div
+                            className="flex gap-6 transition-transform duration-500 ease-in-out"
+                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
+                        >
+                            {allHotPicks.map((item, index) => (
+                                <div key={item.id} className="relative flex-shrink-0"
+                                    style={{ width: 'calc(20% - 24px)' }}>
                                     <img
-                                        src={item.image}
+                                        className="w-full h-64 object-cover rounded-[10px]"
                                         alt={`Hot Pick ${index + 1}`}
-                                        className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
+                                        src={item.image}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="mt-4 text-left">
+                                        <span
+                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                            {item.category}
+                                        </span>
+                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            <div className="font-bold">{item.location}</div>
+                                            <div>{item.date}</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
-
-                    {/* 중앙 캡션 (블루스퀘어 스타일) */}
-                    <div className="mt-6 text-center">
-                        <div key={activeHotPickIndex} className={`text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
-                            {allHotPicks[activeHotPickIndex]?.title}
-                        </div>
-                        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
-                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <HiOutlineCalendar className="w-4 h-4 flex-shrink-0" />
-                                <span className="truncate">
-                                    {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
-                                </span>
-                            </div>
-                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <FaMapMarkerAlt className="w-4 h-4 flex-shrink-0" />
-                                <span className="truncate">
-                                    {allHotPicks[activeHotPickIndex]?.location}
-                                </span>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* 행사 섹션 */}
-            <div className="py-16 theme-surface theme-transition">
+            <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
+                        <h2 className="text-3xl font-bold text-black">행사</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
@@ -548,13 +529,9 @@ export const Main: React.FC = () => {
                             <button
                                 key={index}
                                 onClick={() => handleCategoryChange(filter)}
-                                className={`px-4 py-2 rounded-full text-sm border theme-transition ${selectedCategory === filter
-                                    ? (isDark
-                                        ? 'dm-light font-bold border-gray-300'
-                                        : 'bg-black text-white font-bold border-gray-800')
-                                    : (isDark
-                                        ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
-                                        : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
+                                className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
+                                    ? "bg-black text-white font-bold"
+                                    : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
                                     }`}
                             >
                                 {filter}
@@ -563,19 +540,18 @@ export const Main: React.FC = () => {
                     </div>
 
                     {/* 행사 카드들 */}
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-5 gap-6">
                         {events.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
-                                    <div className="relative group">
+                                    <div className="relative">
                                         <img
-                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
+                                            className="w-full h-64 object-cover rounded-[10px]"
                                             alt={event.title}
                                             src={event.thumbnailUrl}
                                         />
-                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                                         <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
@@ -586,11 +562,12 @@ export const Main: React.FC = () => {
                                     </div>
                                     <div className="mt-4 text-left">
 
-                                        <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
+                                        <span
+                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
                                             {event.mainCategory}
                                         </span>
-                                        <h3 className={`font-bold text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
-                                        <div className={`text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                        <div className="text-sm text-gray-600 mb-2">
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
@@ -601,10 +578,12 @@ export const Main: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* 전체보기 버튼 */}
+                    {/* 전체보기 버튼 */
+                    }
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
-                            <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
+                            <button
+                                className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
                                 전체보기
                             </button>
                         </Link>
@@ -612,8 +591,22 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */}
-            <Footer />
+            {/* 푸터 */
+            }
+            <footer className="bg-white border-t border-gray-200 py-16">
+                <div className="max-w-7xl mx-auto px-8 text-center">
+                    <p className="text-gray-600 mb-8">
+                        간편하고 안전한 행사 관리 솔루션
+                    </p>
+                    <div className="flex justify-center space-x-8">
+                        <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
+                        <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
+                        <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
+                        <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
+                    </div>
+                </div>
+            </footer>
         </div>
-    );
+    )
+        ;
 }; 

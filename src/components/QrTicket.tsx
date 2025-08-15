@@ -6,18 +6,14 @@ import {
     User,
     AlertCircle,
 } from "lucide-react";
-
 import {
     getQrTicketForMypage,
-    reissueQrTicketByMember
 } from "../services/qrTicket"
-
-import { QRCodeCanvas } from 'qrcode.react';
 import type {
-    QrTicketRequestDto,
-    QrTicketResponseDto,
-    QrTicketReissueMemberRequestDto
-} from "@/services/types/qrTicketType";
+    QrTicketRequestDto
+} from "../services/types/qrTicketType"
+import { QRCodeCanvas } from 'qrcode.react';
+import type { QrTicketResponseDto } from "@/services/types/qrTicketType";
 
 // 스크롤바 숨기기 CSS
 const scrollbarHideStyles = `
@@ -47,7 +43,6 @@ interface QrTicketProps {
 const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
     const [qrCode, setQrCode] = useState(""); // QR 코드 상태
-    const [manualCode, setManualCode] = useState(""); // 수동 코드 상태
     const [currentTicketNumber, setCurrentTicketNumber] = useState(""); // 현재 티켓 번호
     const [resData, setResData] = useState<QrTicketResponseDto>();
 
@@ -87,9 +82,9 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                 
 
                 const res = await getQrTicketForMypage(qrTicketRequestDto);
+                console.log(res.ticketNo + "가 발급됨");
                 setCurrentTicketNumber(res.ticketNo);
                 setQrCode(res.qrCode);
-                setManualCode(res.manualCode);
                 setResData(res);
             };
             fetchQrTicket();
@@ -108,30 +103,24 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
         return () => clearInterval(timer);
     }, [isOpen, qrCode]);
 
-    // 삭제 예정
-    // // 티켓 번호 생성 함수
-    // const generateTicketNumber = () => {
-    //     const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    //     return `KPC-2024-${randomNum}`;
-    // };
+    // 티켓 번호 생성 함수
+    const generateTicketNumber = () => {
+        const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        return `KPC-2024-${randomNum}`;
+    };
 
-    // // QR 코드 생성 함수
-    // const generateQRCode = () => {
-    //     const timestamp = Date.now();
-    //     const randomString = Math.random().toString(36).substring(2, 15);
-    //     return `${currentTicketNumber || data.ticketNumber}-${timestamp}-${randomString}`;
-    // };
+    // QR 코드 생성 함수
+    const generateQRCode = () => {
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        return `${currentTicketNumber || data.ticketNumber}-${timestamp}-${randomString}`;
+    };
 
     // 새로고침 함수
-    const handleRefresh = async () => {
-        const data: QrTicketReissueMemberRequestDto = {
-            reservationId: 1,
-            qrTicketId: 1
-        }
-
-        const res = await reissueQrTicketByMember(data);
-        setQrCode(res.qrCode);
-        setManualCode(res.manualCode);
+    const handleRefresh = () => {
+        const newTicketNumber = generateTicketNumber();
+        setCurrentTicketNumber(newTicketNumber);
+        setQrCode(generateQRCode());
         setTimeLeft(300); // 타이머 리셋
     };
 
@@ -182,13 +171,8 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         <QRCodeCanvas
                                             value={qrCode}
-                                            size={116}
+                                            size={124}
                                             fgColor={'#000'}
-                                            style={{
-                                                display: 'block',
-                                                width: '120%',
-                                                height: '120%'
-                                            }}
                                         />
                                     </div>
                                 </div>
@@ -196,8 +180,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                         </div>
 
                         <div className="text-center">
-                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{manualCode}</p>
-                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{currentTicketNumber || data.ticketNumber}</p>
+                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{currentTicketNumber || data.ticketNumber}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span>유효한 티켓</span>

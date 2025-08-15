@@ -1,41 +1,78 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Edit2 } from "lucide-react";
-import {
-    getAttendeesReservation,
-    updateAttendee
-} from "../../services/attendee";
-import type {
-    AttendeeUpdateRequestDto,
-    AttendeeInfoResponseDto
-} from "../../services/types/attendeeType";
+import { eventApi } from "../../services/api";
 import EditParticipantModal from "../../components/EditParticipantModal";
 
+interface Participant {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+    registrationDate: string;
+    isOwner?: boolean;
+}
 
 export default function ParticipantList(): JSX.Element {
     const navigate = useNavigate();
-    const location = useLocation();
-    const { reservationId, eventName } = location.state || {};
-    const [participants, setParticipants] = useState<AttendeeInfoResponseDto[]>([]);
+    const [searchParams] = useSearchParams();
+    const eventName = searchParams.get('eventName') || '';
+    const [participants, setParticipants] = useState<Participant[]>([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedParticipant, setSelectedParticipant] = useState<AttendeeInfoResponseDto | null>(null);
+    const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // API에서 사용자 정보 가져오기
+                const userData = await eventApi.getUserInfo();
 
-        const fetchParticipant = async () => {
-            const res = await getAttendeesReservation(Number(reservationId));
-            setParticipants(res.attendees);
-        }
-        fetchParticipant();
-    }, []);
+                // 계정 주인 정보 생성
+                const ownerInfo: Participant = {
+                    id: `owner-${userData.userId}`,
+                    name: userData.name,
+                    phone: userData.phone,
+                    email: userData.email,
+                    registrationDate: new Date().toISOString().split('T')[0], // 오늘 날짜
+                    isOwner: true
+                };
+
+                // 행사별 참여자 목록 가져오기
+                const eventKey = `participants_${eventName}`;
+                const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
+
+                // 계정 주인을 맨 위에 추가
+                const allParticipants = [ownerInfo, ...storedParticipants];
+                setParticipants(allParticipants);
+            } catch (error) {
+                console.error('사용자 정보를 가져오는 중 오류 발생:', error);
+                // 오류 발생 시 기본 데이터 사용
+                const fallbackOwnerInfo: Participant = {
+                    id: 'owner-1',
+                    name: '사용자',
+                    phone: '010-0000-0000',
+                    email: 'user@example.com',
+                    registrationDate: new Date().toISOString().split('T')[0],
+                    isOwner: true
+                };
+
+                const eventKey = `participants_${eventName}`;
+                const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
+                const allParticipants = [fallbackOwnerInfo, ...storedParticipants];
+                setParticipants(allParticipants);
+            }
+        };
+
+        fetchData();
+    }, [eventName]);
 
     const handleBack = () => {
         navigate('/mypage/tickets');
     };
 
-    const handleEdit = (participant: AttendeeInfoResponseDto) => {
+    const handleEdit = (participant: Participant) => {
         setSelectedParticipant(participant);
         setIsEditModalOpen(true);
     };
@@ -45,27 +82,21 @@ export default function ParticipantList(): JSX.Element {
         setSelectedParticipant(null);
     };
 
-    const handleEditSave = async (updatedParticipant: AttendeeInfoResponseDto) => {
+    const handleEditSave = (updatedParticipant: Participant) => {
         // 참여자 목록에서 해당 참여자 업데이트
         const updatedParticipants = participants.map(p =>
-            p.attendeeId === updatedParticipant.attendeeId ? updatedParticipant : p
+            p.id === updatedParticipant.id ? updatedParticipant : p
         );
         setParticipants(updatedParticipants);
 
-        const data: AttendeeUpdateRequestDto = {
-            reservationId: updatedParticipant.reservationId,
-            name: updatedParticipant.name,
-            email: updatedParticipant.email, 
-            phone: updatedParticipant.phone
-        }
-
-        const res = await updateAttendee(Number(updatedParticipant.attendeeId), data);
-
-        setParticipants(prev =>
-            prev.map(p =>
-                p.attendeeId === updatedParticipant.attendeeId ? updatedParticipant : p
-            )
+        // localStorage 업데이트 (행사별)
+        const eventKey = `participants_${eventName}`;
+        const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
+        const updatedStoredParticipants = storedParticipants.map((p: Participant) =>
+            p.id === updatedParticipant.id ? updatedParticipant : p
         );
+        localStorage.setItem(eventKey, JSON.stringify(updatedStoredParticipants));
+
         alert("참여자 정보가 수정되었습니다.");
     };
 
@@ -86,7 +117,7 @@ export default function ParticipantList(): JSX.Element {
                             <div className="flex items-center space-x-4">
                                 <button
                                     onClick={handleBack}
-                                    className="p-2 hover:bg-gray-100 rounded-[10px] transition-colors"
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 >
                                     <ArrowLeft className="w-5 h-5 text-gray-500" />
                                 </button>
@@ -128,6 +159,9 @@ export default function ParticipantList(): JSX.Element {
                                                 <th className="text-left py-3 px-4 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-gray-700 text-sm">
                                                     이메일
                                                 </th>
+                                                <th className="text-left py-3 px-4 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-gray-700 text-sm">
+                                                    등록일
+                                                </th>
                                                 <th className="text-center py-3 px-4 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-gray-700 text-sm">
                                                     수정
                                                 </th>
@@ -135,13 +169,13 @@ export default function ParticipantList(): JSX.Element {
                                         </thead>
                                         <tbody>
                                             {participants.map((participant, index) => (
-                                                <tr key={participant.attendeeId} className="border-b border-gray-100 hover:bg-gray-50">
+                                                <tr key={participant.id} className="border-b border-gray-100 hover:bg-gray-50">
                                                     <td className="py-3 px-4 [font-family:'Roboto-Regular',Helvetica] font-normal text-gray-700 text-sm">
                                                         {index + 1}
                                                     </td>
                                                     <td className="py-3 px-4 [font-family:'Roboto-Medium',Helvetica] font-medium text-gray-900 text-sm">
                                                         {participant.name}
-                                                        {index == 0 && (
+                                                        {participant.isOwner && (
                                                             <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                                                 계정 주인
                                                             </span>
@@ -153,11 +187,14 @@ export default function ParticipantList(): JSX.Element {
                                                     <td className="py-3 px-4 [font-family:'Roboto-Regular',Helvetica] font-normal text-gray-700 text-sm">
                                                         {participant.email}
                                                     </td>
+                                                    <td className="py-3 px-4 [font-family:'Roboto-Regular',Helvetica] font-normal text-gray-700 text-sm">
+                                                        {participant.registrationDate}
+                                                    </td>
                                                     <td className="py-3 px-4 text-center">
-                                                        {!(index == 0) && (
+                                                        {!participant.isOwner && (
                                                             <button
                                                                 onClick={() => handleEdit(participant)}
-                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-[10px] transition-colors"
+                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                                 title="수정"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />

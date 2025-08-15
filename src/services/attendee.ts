@@ -1,22 +1,10 @@
-import api from "../api/axios";
+import api from "@/api/axios";
 import type {
     AttendeeSaveRequestDto,
     AttendeeInfoResponseDto,
     AttendeeListInfoResponseDto,
-    AttendeeUpdateRequestDto,
-    ShareTicketInfoResponseDto
+    AttendeeUpdateRequestDto
 } from "./types/attendeeType";
-
-const setAuthorization = () => {
-    const accessToken = localStorage.getItem("accessToken");
-    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
-};
-
-// 폼 링크 조회
-export const getFormInfo = async (token: string): Promise<ShareTicketInfoResponseDto> => {
-    const res = await api.get<ShareTicketInfoResponseDto>(`/api/form?token=${token}`);
-    return res.data;
-}
 
 // 참석자 저장
 export const saveAttendee = async (token: string, data: AttendeeSaveRequestDto): Promise<AttendeeInfoResponseDto> => {
@@ -26,18 +14,18 @@ export const saveAttendee = async (token: string, data: AttendeeSaveRequestDto):
 
 // 참석자 전체 조회
 export const getAttendeesReservation = async (reservationId: number): Promise<AttendeeListInfoResponseDto> => {
-    const res = await api.get<AttendeeListInfoResponseDto>(`/api/attendees/${reservationId}`,{headers: setAuthorization()});
+    const res = await api.get<AttendeeListInfoResponseDto>(`/api/attendees/${reservationId}`);
     return res.data;
 }
 
 // 참석자 정보 변경
 export const updateAttendee = async (attendeeId: number, data: AttendeeUpdateRequestDto): Promise<AttendeeInfoResponseDto> => {
-    const res = await api.patch<AttendeeInfoResponseDto>(`/api/attendees/${attendeeId}`, data,{headers: setAuthorization()});
+    const res = await api.patch<AttendeeInfoResponseDto>(`/api/attendees/${attendeeId}`, data);
     return res.data;
 }
 
 // 행사별 예약자 명단 조회
 export const getAttendeesEvent = async (eventId: number): Promise<AttendeeInfoResponseDto[]> => {
-    const res = await api.get<AttendeeInfoResponseDto[]>(`/api/attendees/events/${eventId}`,{headers: setAuthorization()});
+    const res = await api.get<AttendeeInfoResponseDto[]>(`/api/attendees/events/${eventId}`);
     return res.data;
 }
