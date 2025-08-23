@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../../api/axios';
+import sessionAuth from '../../utils/sessionAuth';
 import { toast } from 'react-toastify';
-import { hasHostPermission, hasBoothManagerPermission } from '../../utils/permissions';
+import { hasHostPermission, hasBoothManagerPermission, hasAdminPermission } from '../../utils/permissions';
+import { setCachedRoleCode } from '../../utils/role';
 
 const KakaoCallback = () => {
     const location = useLocation();
@@ -21,44 +22,44 @@ const KakaoCallback = () => {
 
         const handleKakaoLogin = async (code: string) => {
             try {
-                console.log('카카오 로그인 시도 - code:', code);
+                console.log('세션 기반 카카오 로그인 시도 - code:', code);
                 console.log('User Agent:', navigator.userAgent);
                 console.log('Current URL:', window.location.href);
                 
-                const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
-                const { accessToken, refreshToken } = response.data;
-
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', refreshToken);
-
-                toast.success('카카오 로그인에 성공했습니다!');
-
-                // accessToken에서 사용자 역할 추출
-                try {
-                    const payload = JSON.parse(atob(accessToken.split('.')[1]));
-                    const userRole = payload.role;
-
-                    // 권한별 리다이렉션
-                    if (hasHostPermission(userRole)) {
-                        navigate("/host/dashboard");
-                    } else if (hasBoothManagerPermission(userRole)) {
-                        navigate("/booth-admin/dashboard");
+                const loginSuccess = await sessionAuth.kakaoLogin(code);
+                
+                if (loginSuccess) {
+                    toast.success('카카오 로그인에 성공했습니다!');
+                    
+                    // 세션에서 사용자 정보 가져오기
+                    const currentUser = sessionAuth.getCurrentUser();
+                    if (currentUser) {
+                        const userRole = currentUser.roleName;
+                        setCachedRoleCode(userRole);
+                        
+                        console.log('세션 사용자 정보:', currentUser);
+                        console.log('사용자 역할:', userRole);
+                        
+                        // 권한별 리다이렉션 (ADMIN 우선)
+                        if (hasAdminPermission(userRole)) {
+                            navigate("/admin_dashboard");
+                        } else if (hasHostPermission(userRole)) {
+                            navigate("/host/dashboard");
+                        } else if (hasBoothManagerPermission(userRole)) {
+                            navigate("/booth-admin/dashboard");
+                        } else {
+                            navigate("/");
+                        }
                     } else {
+                        console.error('세션 사용자 정보를 가져올 수 없음');
                         navigate("/");
                     }
-                } catch (error) {
-                    console.error("토큰 파싱 실패:", error);
-                    navigate("/"); // 기본적으로 메인 페이지로
+                } else {
+                    // 로그인 실패 (에러 메시지는 sessionAuth.kakaoLogin 내부에서 처리됨)
+                    navigate('/login');
                 }
             } catch (error: any) {
-                console.error('카카오 로그인 에러 상세:', {
-                    status: error?.response?.status,
-                    data: error?.response?.data,
-                    headers: error?.response?.headers,
-                    config: error?.config,
-                    message: error?.message,
-                    name: error?.name
-                });
+                console.error('카카오 로그인 예상치 못한 에러:', error);
                 toast.error('카카오 로그인에 실패했습니다.');
                 navigate('/login');
             }

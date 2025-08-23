@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import api from "../../api/axios";
+import sessionApi from "../../api/sessionAxios";
+import sessionAuth from "../../utils/sessionAuth";
 import { TopNav } from "../../components/TopNav";
 import { Eye, EyeOff } from "lucide-react";
 import { RiKakaoTalkFill } from "react-icons/ri";
@@ -27,53 +28,48 @@ export const LoginPage = () => {
         if (!isLoginEnabled) return;
         setLoading(true);
         try {
-            const res = await api.post("/api/auth/login", {
-                email,
-                password
-            });
-
-            const { accessToken, refreshToken } = res.data;
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-
-            toast.success(t('auth.loginSuccess'));
-
-            // API를 통해 사용자 역할 조회
-            try {
-                const roleResponse = await api.get("/api/events/user/role");
-                const userRole = roleResponse.data.roleCode;
-                if (userRole) {
+            // 세션 기반 로그인 시도
+            const loginSuccess = await sessionAuth.login(email, password);
+            
+            if (loginSuccess) {
+                toast.success(t('auth.loginSuccess'));
+                
+                // 세션에서 사용자 정보 가져오기
+                const currentUser = sessionAuth.getCurrentUser();
+                if (currentUser) {
+                    const userRole = currentUser.roleName;
                     setCachedRoleCode(userRole);
-                }
-
-                console.log("=== 로그인 디버깅 정보 ===");
-                console.log("Role API Response:", roleResponse.data);
-                console.log("User Role:", userRole);
-                console.log("hasHostPermission:", hasHostPermission(userRole));
-                console.log("hasEventManagerPermission:", hasEventManagerPermission(userRole));
-                console.log("hasAdminPermission:", hasAdminPermission(userRole));
-                console.log("==========================");
-
-                // 권한별 리다이렉션 (ADMIN 우선)
-                if (hasAdminPermission(userRole)) {
-                    console.log("관리자 권한으로 /admin_dashboard로 이동");
-                    navigate("/admin_dashboard");
-                } else if (hasHostPermission(userRole)) {
-                    console.log("행사관리자 권한으로 /host/dashboard로 이동");
-                    navigate("/host/dashboard");
-                } else if (hasBoothManagerPermission(userRole)) {
-                    console.log("부스관리자 권한으로 /booth-admin/dashboard로 이동");
-                    navigate("/booth-admin/dashboard");
+                    
+                    console.log("=== 세션 로그인 디버깅 정보 ===");
+                    console.log("Current User:", currentUser);
+                    console.log("User Role:", userRole);
+                    console.log("hasHostPermission:", hasHostPermission(userRole));
+                    console.log("hasEventManagerPermission:", hasEventManagerPermission(userRole));
+                    console.log("hasAdminPermission:", hasAdminPermission(userRole));
+                    console.log("============================");
+                    
+                    // 권한별 리다이렉션 (ADMIN 우선)
+                    if (hasAdminPermission(userRole)) {
+                        console.log("관리자 권한으로 /admin_dashboard로 이동");
+                        navigate("/admin_dashboard");
+                    } else if (hasHostPermission(userRole)) {
+                        console.log("행사관리자 권한으로 /host/dashboard로 이동");
+                        navigate("/host/dashboard");
+                    } else if (hasBoothManagerPermission(userRole)) {
+                        console.log("부스관리자 권한으로 /booth-admin/dashboard로 이동");
+                        navigate("/booth-admin/dashboard");
+                    } else {
+                        console.log("일반사용자 권한으로 /로 이동");
+                        navigate("/");
+                    }
                 } else {
-                    console.log("일반사용자 권한으로 /로 이동");
+                    // 세션 정보를 가져올 수 없으면 기본 페이지로
                     navigate("/");
                 }
-            } catch (error) {
-                console.error("Role API 호출 실패:", error);
-                navigate("/"); // 기본적으로 메인 페이지로
             }
-        } catch {
-            // Handled by axios interceptor
+        } catch (error) {
+            console.error("로그인 중 오류:", error);
+            // 에러는 sessionAuth.login 내부에서 처리됨
         } finally {
             setLoading(false);
         }
