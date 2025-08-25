@@ -129,8 +129,7 @@ export const Expectations = () => {
     return Array.from({ length: 5 }, (_, index) => (
       <span
         key={index}
-        className={`text-base leading-6 ${index < rating ? "text-[#ffd700]" : "text-[#dddddd]"
-          }`}
+        className={`text-lg ${index < rating ? "text-amber-400" : "text-gray-300"}`}
       >
         ★
       </span>
@@ -209,83 +208,105 @@ export const Expectations = () => {
   };
 
   return (
-    <div>
-      <h3 className="text-2xl font-semibold text-[#212121] mb-8">
-        기대평
-      </h3>
+    <div className="w-full">
+      {/* 헤더 섹션 */}
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 mb-8 border border-emerald-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <h3 className="text-2xl font-bold text-slate-800">
+              기대평
+            </h3>
+            <div className="flex items-center gap-3">
+              <span className="text-slate-600 text-base">
+                ({expectations.length}개의 기대평)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 기대평 작성 폼 */}
-      <div className="w-full p-6 rounded-lg border border-[#0000001a] mb-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-[#212121] mb-2">
+      <div className="bg-white rounded-2xl p-6 mb-8 shadow-sm border border-slate-100">
+        <div className="mb-6">
+          <label className="block text-base font-semibold text-slate-800 mb-4 flex items-center gap-3">
+            <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">✍️</span>
             기대평 작성
           </label>
           <textarea
             value={newExpectation}
             onChange={(e) => setNewExpectation(e.target.value)}
-            placeholder="기대감을 자유롭게 작성해주세요."
-            className="w-full p-4 border border-gray-300 rounded-lg resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base leading-6"
+            placeholder="기대감을 자유롭게 작성해주세요..."
+            className="w-full p-6 border border-slate-200 rounded-xl resize-none h-32 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base leading-relaxed transition-all duration-200 bg-slate-50"
           />
         </div>
 
         <div className="flex justify-end">
           <button
             onClick={handleSubmitExpectation}
-            className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold text-base px-8 py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
-            등록
+            등록하기
           </button>
         </div>
       </div>
 
-      <div className="space-y-4">
+      {/* 기대평 목록 */}
+      <div className="space-y-6">
         {currentExpectations.map((expectation) => (
           <div
             key={expectation.id}
-            className="w-full p-6 rounded-lg border border-[#0000001a]"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
-                <span className="text-base text-[#212121] font-normal">
-                  {expectation.author}
-                </span>
+                <div>
+                  <span className="text-base font-semibold text-slate-800">
+                    {expectation.author}
+                  </span>
+                  <div className="flex gap-1 mt-1">
+                    {renderStars(expectation.rating)}
+                  </div>
+                </div>
               </div>
-              <span className="text-sm text-[#00000099] font-normal">
+              <span className="text-sm text-slate-500 font-medium bg-slate-50 px-3 py-1 rounded-full">
                 {expectation.date}
               </span>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
               {expectation.isHidden ? (
-                <p className="text-base text-[#00000080] font-normal">
-                  비공개 처리된 기대평입니다.
-                </p>
+                <div className="bg-slate-50 rounded-xl p-4 text-center">
+                  <p className="text-slate-500 font-medium">
+                    비공개 처리된 기대평입니다.
+                  </p>
+                </div>
               ) : (
-                <p className="text-base text-black font-normal leading-6">
+                <p className="text-base text-slate-700 font-normal leading-relaxed">
                   {expectation.content}
                 </p>
               )}
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleLike(expectation.id)}
-                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${expectation.isLiked
-                    ? "text-red-500"
-                    : "text-[#00000099] hover:text-red-500"
-                    }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    expectation.isLiked
+                      ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                      : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:border-red-200 hover:text-red-600"
+                  }`}
                 >
                   <span className="text-lg">
                     {expectation.isLiked ? "❤️" : "🤍"}
                   </span>
                   <span>좋아요</span>
-                  <span>{expectation.likeCount}</span>
+                  <span className="font-semibold">{expectation.likeCount}</span>
                 </button>
               </div>
               <button
                 onClick={() => handleReport(expectation.id)}
-                className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors"
+                className="text-sm text-slate-500 font-medium hover:text-red-500 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
               >
                 신고
               </button>
@@ -296,15 +317,16 @@ export const Expectations = () => {
 
       {/* 페이지네이션 */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-8">
-          <div className="flex items-center gap-2">
+        <div className="flex justify-center mt-12">
+          <div className="flex items-center gap-2 bg-white rounded-2xl p-2 shadow-sm border border-slate-100">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === 1
-                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                }`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                currentPage === 1
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+              }`}
             >
               &lt;
             </button>
@@ -313,10 +335,11 @@ export const Expectations = () => {
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === page
-                  ? "bg-black text-white border-black"
-                  : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                  }`}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  currentPage === page
+                    ? "bg-slate-800 text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                }`}
               >
                 {page}
               </button>
@@ -325,10 +348,11 @@ export const Expectations = () => {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === totalPages
-                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                }`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                currentPage === totalPages
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+              }`}
             >
               &gt;
             </button>
@@ -336,39 +360,59 @@ export const Expectations = () => {
         </div>
       )}
 
-      <div className="bg-[#e7eaff] rounded-lg p-6 mt-8">
-        <h4 className="text-base font-semibold text-[#212121] mb-4">
+      {/* 안내사항 */}
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 mt-12 border border-emerald-100">
+        <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-3">
+          <span className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">ℹ️</span>
           주요 안내사항
         </h4>
-        <div className="space-y-2">
-          <p className="text-sm text-black font-normal">
-            • 기대평은 공연 예매 전후에 자유롭게 작성하실 수 있습니다.
-          </p>
-          <p className="text-sm text-black font-normal">
-            • 부적절한 내용이나 광고성 글은 관리자에 의해 삭제될 수 있습니다.
-          </p>
-          <p className="text-sm text-black font-normal">
-            • 타인에게 불쾌감을 주는 표현은 자제해주시기 바랍니다.
-          </p>
-          <p className="text-sm text-black font-normal">
-            • 스포일러가 포함된 내용은 다른 관람객을 위해 주의해주세요.
-          </p>
-          <p className="text-sm text-black font-normal">
-            • 허위 정보나 과장된 내용은 작성하지 말아주세요.
-          </p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="flex items-start gap-3">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              기대평은 공연 예매 전후에 자유롭게 작성하실 수 있습니다.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              부적절한 내용이나 광고성 글은 관리자에 의해 삭제될 수 있습니다.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              타인에게 불쾌감을 주는 표현은 자제해주시기 바랍니다.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              스포일러가 포함된 내용은 다른 관람객을 위해 주의해주세요.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              허위 정보나 과장된 내용은 작성하지 말아주세요.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* 신고 모달 */}
       {showReportModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30">
-          <div className="bg-white w-[411px] rounded-[10px] shadow-lg border border-gray-200">
+        <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 mx-4">
             <div className="p-8">
               <div className="text-center mb-6">
-                <h3 className="[font-family:'Segoe_UI-Bold',Helvetica] font-bold text-black text-xl tracking-[0] leading-[30px] mb-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🚨</span>
+                </div>
+                <h3 className="font-bold text-slate-800 text-xl mb-2">
                   신고하기
                 </h3>
-                <p className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-base tracking-[0] leading-6 mb-6">
+                <p className="text-slate-600 text-base">
                   신고 사유를 입력해주세요
                 </p>
               </div>
@@ -378,20 +422,20 @@ export const Expectations = () => {
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
                   placeholder="신고 사유를 입력해주세요..."
-                  className="w-full p-4 border border-gray-300 rounded-lg resize-none h-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6"
+                  className="w-full p-4 border border-slate-300 rounded-xl resize-none h-32 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-base leading-relaxed transition-all duration-200"
                 />
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-base tracking-[0] leading-6"
+                  className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50 transition-all duration-200 font-medium"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSubmitReport}
-                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-base tracking-[0] leading-6"
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 font-medium shadow-sm"
                 >
                   신고하기
                 </button>
