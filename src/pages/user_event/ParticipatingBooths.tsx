@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getBooths, getBoothDetails, applyForBooth, getBoothTypes } from "../../api/boothApi";
-import {BoothDetailResponse, BoothSummary, BoothType} from "../../types/booth";
+import type { BoothDetailResponse, BoothSummary, BoothType } from "../../types/booth";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
 import { useFileUpload } from "../../hooks/useFileUpload";
@@ -483,12 +483,12 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* 배너 이미지 */}
                             <div className="lg:w-1/3">
-                                <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                     {selectedBooth.boothBannerUrl ? (
                                         <img
                                             src={selectedBooth.boothBannerUrl}
                                             alt={selectedBooth.boothTitle}
-                                            className="w-full h-full object-cover rounded-lg"
+                                            className="w-full h-full object-contain rounded-lg"
                                         />
                                     ) : (
                                         <div className="text-gray-400 text-center">
@@ -998,13 +998,13 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                 className="bg-white border border-gray-200 rounded-[10px] shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
                                 onClick={() => handleBoothClick(booth)}
                             >
-                                {/* 배너(정방형) */}
-                                <div className="aspect-square bg-gray-100 rounded-t-[10px] flex items-center justify-center">
+                                {/* 배너(정방형) - 비율 고정, 이미지 전체 표시 */}
+                                <div className="aspect-square bg-gray-100 rounded-t-[10px] flex items-center justify-center overflow-hidden">
                                     {booth.boothBannerUrl ? (
                                         <img
                                             src={booth.boothBannerUrl}
                                             alt={booth.boothTitle}
-                                            className="w-full h-full object-cover rounded-t-[10px]"
+                                            className="w-full h-full object-contain rounded-t-[10px]"
                                         />
                                     ) : (
                                         <div className="text-gray-400 text-center">
