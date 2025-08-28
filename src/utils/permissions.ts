@@ -31,16 +31,14 @@ export const isCommonUser = (role: string): boolean => {
   return role === USER_ROLES.COMMON;
 };
 
-// 토큰에서 사용자 역할 추출
+// 세션에서 사용자 역할 추출 (JWT에서 세션으로 변경)
 export const getUserRoleFromToken = (): string | null => {
   try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return null;
-
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.role || null;
+    // sessionAuth를 동적으로 import하여 순환 참조 방지
+    const sessionAuth = require('./sessionAuth').default;
+    return sessionAuth.getCurrentUserRole();
   } catch (error) {
-    console.error("토큰에서 역할 추출 실패:", error);
+    console.error("세션에서 역할 추출 실패:", error);
     return null;
   }
 };

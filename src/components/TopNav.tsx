@@ -7,6 +7,7 @@ import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { requireAuth, isAuthenticated } from '../utils/authGuard';
 import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
+import sessionAuth from '../utils/sessionAuth';
 import { useTheme } from '../context/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -87,11 +88,11 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		return () => window.removeEventListener('resize', measure);
 	}, []);
 
-	const handleAuthClick = (e: React.MouseEvent) => {
+	const handleAuthClick = async (e: React.MouseEvent) => {
 		if (isLoggedIn) {
 			e.preventDefault();
-			localStorage.removeItem('accessToken');
-			localStorage.removeItem('refreshToken');
+			// 세션 기반 로그아웃
+			await sessionAuth.logout();
 			clearCachedRoleCode();
 			setIsLoggedIn(false);
 			disconnect(); // 로그아웃 시 웹소켓 연결 해제
@@ -178,18 +179,18 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		setIsSearchOpen(false);
 	};
 
-	// 운영자(전체 관리자) 문의 채팅방 생성/입장
+	// 운영자(전체 관리자) 문의 채팅방 생성/입장 - 세션 기반으로 수정
 	const handleCustomerService = async () => {
 		if (!requireAuth(navigate, t('common.customerService'))) {
 			return;
 		}
 
 		try {
-			const token = localStorage.getItem('accessToken');
+			// 세션 기반 인증된 요청 (쿠키 자동 포함)
 			const api = axios.create({
 				baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
+				withCredentials: true, // 쿠키 포함
 				headers: {
-					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				}
 			});

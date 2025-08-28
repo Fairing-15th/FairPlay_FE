@@ -1,33 +1,29 @@
 import api from "../api/axios";
+import sessionAuth from './sessionAuth';
 
-// LocalStorage 키 상수
+// LocalStorage 키 상수 (하위 호환성을 위해 유지)
 const ROLE_CODE_KEY = "roleCode";
 
-// JWT 토큰을 파싱하여 역할 정보 추출
-const getRoleFromToken = (): string | null => {
+// 세션에서 역할 정보 추출 (JWT에서 세션으로 변경)
+const getRoleFromSession = (): string | null => {
   try {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.role || null;
-    }
-    return null;
+    return sessionAuth.getCurrentUserRole();
   } catch (error) {
-    console.error('토큰에서 역할 추출 실패:', error);
+    console.error('세션에서 역할 추출 실패:', error);
     return null;
   }
 };
 
 export const getCachedRoleCode = (): string | null => {
-  // 먼저 JWT 토큰에서 역할 정보 추출 시도
-  const roleFromToken = getRoleFromToken();
-  if (roleFromToken) {
-    // 토큰에서 가져온 역할을 캐시에 저장
-    setCachedRoleCode(roleFromToken);
-    return roleFromToken;
+  // 먼저 세션에서 역할 정보 추출 시도
+  const roleFromSession = getRoleFromSession();
+  if (roleFromSession) {
+    // 세션에서 가져온 역할을 캐시에 저장 (하위 호환성)
+    setCachedRoleCode(roleFromSession);
+    return roleFromSession;
   }
   
-  // 토큰에서 못 가져오면 localStorage 캐시 확인
+  // 세션에서 못 가져오면 localStorage 캐시 확인 (하위 호환성)
   try {
     return localStorage.getItem(ROLE_CODE_KEY);
   } catch {

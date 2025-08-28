@@ -1,6 +1,6 @@
-// tokenValidator.ts - 앱 시작 시 토큰 유효성 검증
+// tokenValidator.ts - 세션 기반 인증 검증 (JWT에서 세션으로 변경)
 
-import authManager from './auth';
+import sessionAuth from './sessionAuth';
 
 class TokenValidator {
   private static instance: TokenValidator;

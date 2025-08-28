@@ -8,9 +8,9 @@ import type {
     TokenResponseDto
 } from "./types/attendeeType";
 
+// 세션 기반 인증에서는 쿠키가 자동으로 포함되므로 별도 헤더 불필요
 const setAuthorization = () => {
-    const accessToken = localStorage.getItem("accessToken");
-    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+    return {}; // 빈 객체 반환 (하위 호환성 유지)
 };
 
 // 폼 링크 조회

@@ -396,9 +396,9 @@ export const Main: React.FC = () => {
 
   // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
+  // 세션 기반 인증에서는 쿠키가 자동으로 포함되므로 별도 헤더 불필요
   const authHeaders = () => {
-    const token = localStorage.getItem("accessToken");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {}; // 빈 객체 반환 (하위 호환성 유지)
   };
 
   const toggleWish = async (eventId: number) => {

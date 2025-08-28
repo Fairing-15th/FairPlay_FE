@@ -1,31 +1,9 @@
+// authGuard.ts - 세션 기반 인증 가드 (기존 파일 완전 대체)
 import { NavigateFunction } from 'react-router-dom';
+import sessionAuth from './sessionAuth';
 
 export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem('accessToken');
-  
-  if (!token) {
-    return false;
-  }
-  
-  try {
-    // JWT 토큰이 만료되었는지 확인
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const isExpired = payload.exp * 1000 < Date.now();
-    
-    if (isExpired) {
-      // 만료된 토큰 제거
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    // 토큰이 유효하지 않은 경우
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    return false;
-  }
+  return sessionAuth.isLoggedIn();
 };
 
 export const requireAuth = (
@@ -41,16 +19,26 @@ export const requireAuth = (
 };
 
 export const getUserIdFromToken = (): number | null => {
-  const token = localStorage.getItem('accessToken');
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return parseInt(payload.sub || payload.userId);
-  } catch (error) {
-    return null;
-  }
+  return sessionAuth.getCurrentUserId();
+};
+
+// 추가 세션 유틸리티 함수들
+export const getUserIdFromSession = (): number | null => {
+  return sessionAuth.getCurrentUserId();
+};
+
+export const getCurrentUserRole = (): string | null => {
+  return sessionAuth.getCurrentUserRole();
+};
+
+export const getCurrentUserEmail = (): string | null => {
+  return sessionAuth.getCurrentUserEmail();
+};
+
+export const hasRole = (role: string): boolean => {
+  return sessionAuth.hasRole(role);
+};
+
+export const hasAnyRole = (roles: string[]): boolean => {
+  return sessionAuth.hasAnyRole(roles);
 };

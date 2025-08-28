@@ -42,10 +42,8 @@ export const updateBoothAdminInfo = (eventId: number, boothId: number, data: Boo
 };
 
 export const getUserRecentlyEventWaitingCount = async (eventId: number): Promise<BoothUserRecentlyWaitingCount> => {
-    const accessToken = localStorage.getItem("accessToken");
-    const res = await api.get<BoothUserRecentlyWaitingCount>(`/api/booth-experiences/user/${eventId}/waiting-count`, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
+    // 세션 기반 인증에서는 쿠키가 자동으로 포함됨
+    const res = await api.get<BoothUserRecentlyWaitingCount>(`/api/booth-experiences/user/${eventId}/waiting-count`);
     return res.data;
 }
 
